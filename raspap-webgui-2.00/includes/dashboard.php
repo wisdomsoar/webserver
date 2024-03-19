@@ -7,12 +7,49 @@ function DisplayDashboard()
 {
 
     $status = new StatusMessages();
+	
+	$rmnet_int = array();
+
+	$ifconfig_result = array();
+	$rmnet_data0_result = array();
+	exec('ifconfig', $ifconfig_result);
+	
+	$len = 0;
+	$len = count($ifconfig_result);
+	for($i = 0; $i < $len; $i++)
+	{
+		$pos = strpos($ifconfig_result[$i], 'rmnet_data0');
+		if ($pos !== false)
+		{
+			exec('ifconfig rmnet_data0', $rmnet_data0_result);
+			$rmnet_int = 'rmnet_data0'; //sorry for hard-code
+			break;
+		}
+	}
+	
+	$up_running = false;
+	$len = count($rmnet_data0_result);
+	for($i = 0; $i < $len; $i++)
+	{
+		$pos = strpos($rmnet_data0_result[$i], 'UP RUNNING');
+		if ($pos !== false)
+		{
+			$up_running = true;
+			break;
+		}
+	}
+	
+	//exec('ifconfig | grep rmnet  | grep data | cut -d  " " -f1', $rmnet_int);
+
+	//$rmnet_int = $rmnet_data0_result[0];
+	
     // Need this check interface name for proper shell execution.
-    if (!preg_match('/^([a-zA-Z0-9]+)$/', RASPI_WIFI_CLIENT_INTERFACE)) {
+	/*
+    if (!preg_match('/^([a-zA-Z0-9]+)$/', $rmnet_int)) {
         $status->addMessage(_('Interface name invalid.'), 'danger');
         $status->showMessages();
         return;
-    }
+    }*/
 
     if (!function_exists('exec')) {
         $status->addMessage(_('Required exec function is disabled. Check if exec is not added to php disable_functions.'), 'danger');
@@ -20,7 +57,7 @@ function DisplayDashboard()
         return;
     }
 
-    exec('ip a show '.RASPI_WIFI_CLIENT_INTERFACE, $stdoutIp);
+    exec('ip a show '.$rmnet_int, $stdoutIp);
     $stdoutIpAllLinesGlued = implode(" ", $stdoutIp);
     $stdoutIpWRepeatedSpaces = preg_replace('/\s\s+/', ' ', $stdoutIpAllLinesGlued);
 
@@ -53,36 +90,57 @@ function DisplayDashboard()
         }
     }
 
-    preg_match('/state (UP|DOWN)/i', $stdoutIpWRepeatedSpaces, $matchesState) || $matchesState[1] = 'unknown';
-    $interfaceState = $matchesState[1];
+    //preg_match('/state (UP|DOWN)/i', $stdoutIpWRepeatedSpaces, $matchesState) || $matchesState[1] = 'unknown';
+    //$interfaceState = $matchesState[1];
+	if ($up_running === true )
+	{
+		$interfaceState = 'UP';
+	}
 
     // Because of table layout used in the ip output we get the interface statistics directly from
     // the system. One advantage of this is that it could work when interface is disable.
-    exec('cat /sys/class/net/'.RASPI_WIFI_CLIENT_INTERFACE.'/statistics/rx_packets ', $stdoutCatRxPackets);
+    exec('cat /sys/class/net/'.$rmnet_int.'/statistics/rx_packets ', $stdoutCatRxPackets);
     $strRxPackets = _('No data');
     if (ctype_digit($stdoutCatRxPackets[0])) {
         $strRxPackets = $stdoutCatRxPackets[0];
     }
 
-    exec('cat /sys/class/net/'.RASPI_WIFI_CLIENT_INTERFACE.'/statistics/tx_packets ', $stdoutCatTxPackets);
+    exec('cat /sys/class/net/'.$rmnet_int.'/statistics/tx_packets ', $stdoutCatTxPackets);
     $strTxPackets = _('No data');
     if (ctype_digit($stdoutCatTxPackets[0])) {
         $strTxPackets = $stdoutCatTxPackets[0];
     }
 
-    exec('cat /sys/class/net/'.RASPI_WIFI_CLIENT_INTERFACE.'/statistics/rx_bytes ', $stdoutCatRxBytes);
+    exec('cat /sys/class/net/'.$rmnet_int.'/statistics/rx_bytes ', $stdoutCatRxBytes);
     $strRxBytes = _('No data');
     if (ctype_digit($stdoutCatRxBytes[0])) {
         $strRxBytes = $stdoutCatRxBytes[0];
         $strRxBytes .= getHumanReadableDatasize($strRxBytes);
     }
 
-    exec('cat /sys/class/net/'.RASPI_WIFI_CLIENT_INTERFACE.'/statistics/tx_bytes ', $stdoutCatTxBytes);
+    exec('cat /sys/class/net/'.$rmnet_int.'/statistics/tx_bytes ', $stdoutCatTxBytes);
     $strTxBytes = _('No data');
     if (ctype_digit($stdoutCatTxBytes[0])) {
         $strTxBytes = $stdoutCatTxBytes[0];
         $strTxBytes .= getHumanReadableDatasize($strTxBytes);
     }
+
+	/*
+/data # xs_cm_cli get_signal_info
+Radio : 'LTE'
+RSSI  : '-69 dBm'
+RSRQ  : '-14 dB'
+RSRP  : '-103 dBm'
+SNR   : '5.6 dB'
+	*/
+	exec('xs_cm_cli get_signal_info', $stdoutSignal);
+	//file_put_contents('/tmp/hello.txt', implode("\n", $stdoutSignal));
+	$matchesRadio = array();
+	preg_match('/Radio\s*:\s*\'(.*?)\'/', $stdoutSignal[0], $matchesRadio);
+	$connectedRadio = $matchesRadio[1];
+
+	preg_match('/SNR\s*:\s*\'(.*?)\'/', $stdoutSignal[4], $matchesSNR);
+	$snr = $matchesSNR[1];
 
     define('SSIDMAXLEN', 32);
     // Warning iw comes with: "Do NOT screenscrape this tool, we don't consider its output stable."
@@ -135,9 +193,11 @@ function DisplayDashboard()
     }
 
     $wlan0up = false;
+	$rmnet_data0up = false;
     $classMsgDevicestatus = 'warning';
     if ($interfaceState === 'UP') {
-        $wlan0up = true;
+ //       $wlan0up = true;
+		$rmnet_data0up = true;
         $classMsgDevicestatus = 'success';
     }
 
@@ -181,6 +241,8 @@ function DisplayDashboard()
         "strRxBytes",
         "strTxPackets",
         "strTxBytes",
+		"connectedRadio",
+		"snr",
         "connectedSSID",
         "connectedBSSID",
         "bitrate",
@@ -188,7 +250,9 @@ function DisplayDashboard()
         "txPower",
         "frequency",
         "strLinkQuality",
-        "wlan0up"
+		"rmnet_data0",
+		"rmnet_data0up"
+//        "wlan0up"
     ));
 }
 
