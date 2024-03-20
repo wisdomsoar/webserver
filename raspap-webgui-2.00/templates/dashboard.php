@@ -106,9 +106,9 @@ $ifaceStatus = $rmnet_data0up ? "up" : "down";
                         < ? php endforeach ?>
                     </tbody>
                   </table>
-                </div><!-- /.table-responsive -->
-              </div><!-- /.card-body -->
-            </div><!-- /.card -->
+                </div><!-- /.table-responsive -- >
+              </div><!-- /.card-body -- >
+            </div><!-- /.card -- >
 			-->
 			
 			
