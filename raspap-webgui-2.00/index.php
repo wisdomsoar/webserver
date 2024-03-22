@@ -19,6 +19,7 @@ include_once('includes/hostapd.php');
 include_once('includes/system.php');
 include_once('includes/configure_client.php');
 include_once('includes/networking.php');
+include_once('includes/connection_mgr.php');
 include_once('includes/themes.php');
 include_once('includes/data_usage.php');
 
@@ -47,7 +48,7 @@ if ($_COOKIE['sidebarToggled'] == 'true' ) {
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title><?php echo _("RaspAP WiFi Configuration Portal"); ?></title> 
+    <title><?php echo _("XSquare DTU Configuration Portal"); ?></title> 
 
     <!-- Bootstrap Core CSS -->
     <link href="dist/bootstrap/css/bootstrap.css" rel="stylesheet">
@@ -95,7 +96,7 @@ if ($_COOKIE['sidebarToggled'] == 'true' ) {
 			        <!-- logo img -->
             <img src="app/img/raspAP-logo64px.png" width="32" height="32">
           </div>
-	  <div class="sidebar-brand-text ml-1">XSquareAP</div>
+	  <div class="sidebar-brand-text ml-1">XSquare</div>
 	</a>
         <!-- Divider -->
         <hr class="sidebar-divider my-0">
@@ -106,9 +107,20 @@ if ($_COOKIE['sidebarToggled'] == 'true' ) {
 
 	  <?php if (RASPI_NETWORK_ENABLED) : ?>
 	<li class="nav-item">
-	   <a class="nav-link" href="index.php?page=network_conf"><i class="fas fa-network-wired fa-fw mr-2"></i><span class="nav-label"><?php echo _("Configure networking"); ?></a>
+	   <a class="nav-link" href="index.php?page=network_conf">
+	   <i class="fas fa-network-wired fa-fw mr-2"></i><span class="nav-label">
+	   <?php echo _("Networking status"); ?></a>
 	</li> 
+	
+	
+	<li class="nav-item">
+	   <a class="nav-link" href="index.php?page=xs_cm_conf">
+	   <i class="fas fa-network-wired fa-fw mr-2"></i><span class="nav-label">
+	   <?php echo _("Connection Manager"); ?></a>
+	</li> 
+	
 	  <?php endif; ?>
+	  
 	  <?php if (RASPI_DHCP_ENABLED) : ?>
 	<li class="nav-item">
 	  <a class="nav-link" href="index.php?page=dhcpd_conf"><i class="fas fa-exchange-alt fa-fw mr-2"></i><span class="nav-label"><?php echo _("Configure DHCP Server"); ?></a>
@@ -187,12 +199,15 @@ if ($_COOKIE['sidebarToggled'] == 'true' ) {
 	    $extraFooterScripts = array();
 	    // handle page actions to view
 	    switch ($page) {
-	    case "wlan0_info":
-		DisplayDashboard();
-		break;
-	    case "dhcpd_conf":
-		DisplayDHCPConfig();
-		break;
+			case "wlan0_info":
+				DisplayDashboard();
+				break;
+			case "dhcpd_conf":
+				DisplayDHCPConfig();
+				break;
+			case "xs_cm_conf":
+				DisplayConnectionConfig();
+				break;
 	    case "wpa_conf":
 		DisplayWPAConfig();
 		break;
