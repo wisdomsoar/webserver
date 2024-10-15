@@ -1,0 +1,8 @@
+Debug
+Release
+.bak 
+*.ncb
+*.opt
+*.plg
+*.positions
+*.WW
